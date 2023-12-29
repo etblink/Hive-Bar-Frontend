@@ -98,9 +98,11 @@ app.get("/community/posts/", async (req, res) => {
         });
 
 // Endpoint to handle individual post page requests
-app.get("/hive-167922/@:username/:postTitle", async (req, res) => {
+app.get("/:postCategory/@:username/:postTitle", async (req, res) => {
   const username = req.params.username;
   const postPermlink = req.params.postTitle;
+  const postCategory = req.params.postCategory;
+  console.log(req.params)
   try {
     const postQuery = {
       tag: username, 
@@ -111,7 +113,7 @@ app.get("/hive-167922/@:username/:postTitle", async (req, res) => {
     
 
     
-    const posts = await client.database.call('get_content', [username, postPermlink]);
+    const posts = await client.database.call('get_content', [username, postPermlink, postCategory]);;
 
     const renderedBody = renderer.render(posts.body);
     
