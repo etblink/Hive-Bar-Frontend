@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community | Bar on the Hive</title>
+    <link rel="stylesheet" href="style.css" />
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10"
+      integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <button id="loginButton">Login</button>
+    <button id="logoutButton" style="display: none">Logout</button>
+    <script>
+      function upvoteWithKeychain(author, permlink) {
+          if (!window.hive_keychain) {
+              alert("Hive Keychain is not installed");
+              return;
+          }
+          // Encoder for Hive usernames and permalinks
+          function encodeHiveEntity(entity) {
+              if (typeof entity !== 'string') {
+                  console.error("Invalid entity type, expected a string.");
+                  return null;
+              }
+              return encodeURIComponent(entity).replace(/%/g, ''); // Hive blockchain expects encoded but without '%' character
+          }
+          const voter = localStorage.getItem("hive_username");
+          if (!voter) {
+              alert("You must be logged in to vote");
+              return;
+          }
+          // Validate and encode author and permlink
+          const encodedAuthor = encodeHiveEntity(author);
+          const encodedPermlink = encodeHiveEntity(permlink);
+          if (!encodedAuthor || !encodedPermlink) {
+              alert("Invalid author or permlink format");
+              return;
+          }
+          const weight = 10000; // 100% upvote weight
+          // Call requestVote with encoded parameters
+          hive_keychain.requestVote(encodedAuthor, encodedPermlink, weight, function(response) {
+              if (response.success) {
+                  alert("Upvote successful!");
+                  // Implement the logic to update the UI after a successful vote here if needed
+              } else {
+                  alert("Upvote failed: " + response.message);
+              }
+          });
+      }
+      
+        document.addEventListener("DOMContentLoaded", function () {
+          const loginButton = document.getElementById("loginButton");
+          const logoutButton = document.getElementById("logoutButton");
+          function checkLoginState() {
+            if (localStorage.getItem("hive_username")) {
+              loginButton.style.display = "none";
+              logoutButton.style.display = "block";
+            } else {
+              loginButton.style.display = "block";
+              logoutButton.style.display = "none";
+            }
+          }
+          function handleLogout() {
+            localStorage.removeItem("hive_username");
+            checkLoginState();
+          }
+
+        checkLoginState(); // Check login state when the page loads
+
+        loginButton.addEventListener("click", function () {
+          if (window.hive_keychain) {
+            const username = prompt("Please enter your Hive username:");
+            if (username) {
+              hive_keychain.requestSignBuffer(
+                username,
+                JSON.stringify({ time: Date.now() }),
+                "Posting",
+                function (response) {
+                  console.log(response);
+                  if (response.success) {
+                    alert("Login successful");
+                    localStorage.setItem("hive_username", username); // Save the username in localStorage
+                    checkLoginState();
+                  } else {
+                    alert("Login failed: " + response.message);
+                  }
+                },
+              );
+            } else {
+              alert("Username is required to login.");
+            }
+          } else {
+            alert("Hive Keychain extension is not installed or not unlocked.");
+          }
+        });
+        logoutButton.addEventListener("click", handleLogout);
+      
+      });
+    </script>
+    <header>
+      <h1>Community Hub</h1>
+      <nav>
+        <a href="./index.html">Home</a>
+        <a href="./community.html">Community</a>
+      </nav>
+    </header>
+    <main>
+      <section id="cards">
+        <!-- Dynamic content loaded with HTMX will go here -->
+        <div
+          id="posts"
+          hx-get="/community/posts/"
+          hx-trigger="load revealed"
+          hx-target="#posts"
+          hx-indicator="#loading"
+          hx-swap="beforeend"
+        >
+          <img id="loading" src="./assets/spinner.svg" class="htmx-indicator" />
+          <!-- The next posts will be appended here -->
+        </div>
+      </section>
+
+      <aside id="sidebar">
+        <h2>Community Actions</h2>
+        <!-- Links, actions or information relevant to community interaction -->
+        <p class="card">blah blah blah blah</p>
+      </aside>
+    </main>
+    <footer>
+      <p>&copy; 2023 Bar on the Hive - Community</p>
+    </footer>
+  </body>
+</html>

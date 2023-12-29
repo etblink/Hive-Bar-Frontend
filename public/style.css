@@ -1,0 +1,155 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    text-align: center;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    padding: 0 10px;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+main {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin: 20px;
+}
+
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0;
+    position: relative;
+    width: 100%;
+}
+
+#posts + footer {
+    margin-top: 20px;
+}
+
+/* Card style for posts */
+.post {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.post h2 {
+    margin-bottom: 10px;
+}
+
+.post p {
+    color: #666;
+}
+
+.post a {
+    color: #007bff;
+    display: inline-block;
+    margin-top: 10px;
+    text-decoration: none;
+}
+
+.post a:hover {
+    text-decoration: underline;
+}
+.img-wrapper{
+  width: 20px;
+}
+.like-button, .dislike-button{
+    width: 100%;
+    background-color: #4CAF50;
+    color: white;
+    display: inline-block;
+    margin: 4
+}
+.dislike-button{
+    background-color: #f44336;
+}
+.like-button:hover{
+    background-color: #3e8e41;
+}
+.dislike-button:hover{
+    background-color: #b71c1c;
+}
+
+
+/* Layout for sidebar and cards */
+#cards {
+    flex-grow: 1;
+    flex-basis: calc(100% - 320px);
+    margin-right: 20px;
+}
+
+#sidebar {
+    flex-basis: 300px;
+}
+
+/* Card style for sidebar */
+.card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 15px;
+    margin-bottom: 10px;
+}
+@media (max-width: 768px) {
+    main {
+        margin: 10px;
+    }
+
+    #cards, #sidebar {
+        flex-basis: auto;
+        margin-right: 0;
+        width: 100%;
+    }
+}
+
+/* Styling the login button */
+#loginButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#loginButton:hover {
+  background-color: #0056b3;
+}
+
+/* Styling for the logout button */
+#logoutButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#logoutButton:hover {
+  background-color: #c82333;
+}
