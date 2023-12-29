@@ -30,6 +30,12 @@ const renderer = new DefaultRenderer({
   isLinkSafeFn: (url) => true,
 });
 
+// General request logging
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  next();
+});
+
 // Serve static files from the 'public' directory
 app.use(express.static("public"));
 
@@ -94,27 +100,22 @@ app.get("/community/posts/", async (req, res) => {
 // Endpoint to handle individual post page requests
 app.get("/hive-167922/@:username/:postTitle", async (req, res) => {
   const username = req.params.username;
-  const postPermlink = req.params.postTitle.toLowerCase(); // Convert to lowercase to standardize for comparison
-  console.log("Fetching individual post...");
+  const postPermlink = req.params.postTitle;
   try {
-    // Modify postQuery to use start_author and start_permlink
     const postQuery = {
-      tag: username, // the author's Hive username
+      tag: username, 
       limit: 1,
       start_author: username,
       start_permlink: postPermlink
     };
-    const posts = await client.database.getDiscussions("blog", postQuery);
-    const post = posts.find((p) => p.permlink.toLowerCase() === postPermlink);
-    // Check if post exists
-    if (!post) {
-      return res.status(404).send("Post not found");
-    }
+    
 
-    // Render the post content from markdown to HTML using the initialized renderer
-    const renderedBody = renderer.render(post.body);
+    
+    const posts = await client.database.call('get_content', [username, postPermlink]);
 
-    // Create HTML header with navigation and stylings for the post
+    const renderedBody = renderer.render(posts.body);
+    
+
     const headerHtml = `
           <head>
           <style>
@@ -160,20 +161,19 @@ app.get("/hive-167922/@:username/:postTitle", async (req, res) => {
           </style>
           </head>
           <header>
-              <h1>${post.title}</h1>
+              <h1>${posts.title}</h1>
               <nav>
                   <a href="/">Home</a>
                   <a href="/community.html">Community</a>
               </nav>
           </header>
       `;
-    // Create HTML for the post including the header
     const postHtml = `
           ${headerHtml}
           <main>
             <div class="post">
-                <h2>${post.title}</h2>
-                <a href="/@${post.author}"><span>${post.author}</span></a>
+                <h2>${posts.title}</h2>
+                <a href="/@${posts.author}"><span>${posts.author}</span></a>
                 <div>${renderedBody}</div>
             </div>
           </main>
@@ -182,13 +182,9 @@ app.get("/hive-167922/@:username/:postTitle", async (req, res) => {
           </footer>
       `;
 
-    // Send the HTML as a response
-res.send(postHtml);
+    res.send(postHtml);
   } catch (error) {
-      console.error("Error fetching the individual post:", error);
-      res
-        .status(500)
-        .send("Error fetching the individual post from Hive community");
+      res.status(500).send("Error fetching the individual post from Hive community");
     }
   });
 
