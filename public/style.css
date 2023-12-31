@@ -29,8 +29,10 @@ nav a:hover {
 
 /* Added styles for main content sections */
 section {
-    margin: 2em 0;
-    padding: 1em;
+  margin: 2em 0;
+  padding: 1em;
+}
+#content section {
     background: #f8f8f8;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -224,7 +226,7 @@ footer {
 
 /* Apply a responsive grid layout */
 @media (min-width: 768px) {
-    main {
+    main#content {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 2em;
@@ -232,4 +234,10 @@ footer {
     section {
         margin: 0;
     }
+}
+
+#card-holder {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
 }
