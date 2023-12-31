@@ -45,7 +45,7 @@ router.get("/community/posts/", (req, res) => {
   if (isCacheValid(cachedData)) {
     console.log("Serving posts from cache");
     // Render HTML from the cached post JSON
-    const postsHtml = renderPosts(cachedData);
+    const postsHtml = renderPosts(cachedData.data);
     return res.send(postsHtml);
   }
   console.log("Fetching posts...");
