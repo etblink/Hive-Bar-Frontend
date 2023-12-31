@@ -182,6 +182,7 @@ router.get("/@:username", (req, res) => {
           integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
           crossorigin="anonymous"
         ></script>
+        <script src="communityActions.js"></script>
         </head>
         <header>
             <h1>${displayName}</h1>
