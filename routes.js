@@ -2,17 +2,38 @@ const express = require("express");
 const router = express.Router();
 const { fetchPosts, parseMetadata, escapeHTML } = require("./utils");
 const { client, renderer } = require("./hiveClient");
+// Simple in-memory cache
+const cache = {};
+// Function to get data from cache by key
+function getFromCache(key) {
+  return cache[key];
+}
+// Function to set data to cache with a key and TTL (time to live)
+function setToCache(key, data, ttl = 300000) { // Default TTL 5 minutes
+  cache[key] = { data, expiry: Date.now() + ttl };
+}
+// Function to check cache validity
+function isCacheValid(entry) {
+  return entry && entry.expiry > Date.now();
+}
 
 // Define a route to fetch posts from the Hive community and return as HTML
 router.get("/community/posts/", (req, res) => {
+  const cacheKey = "community_posts";
+  const cachedData = getFromCache(cacheKey);
+
+  if (isCacheValid(cachedData)) {
+    console.log("Serving posts from cache");
+    return res.send(cachedData.data);
+  }
   console.log("Fetching posts...");
   const postQuery = {
     tag: "hive-167922",
     limit: 2,
   };
-  const retries = 3; // Number of attempts to fetch posts before giving up
-  const retryDelay = 2000; // Delay between retries in milliseconds
-  // Use the fetchPosts function with our defined retries, delay, and pass the client object
+  const retries = 3;
+  const retryDelay = 2000;
+
   fetchPosts(retries, retryDelay, postQuery, client)
     .then((posts) => {
         console.log(`Fetched ${posts.length} posts`);
@@ -35,6 +56,8 @@ router.get("/community/posts/", (req, res) => {
                   </div>`;
           })
           .join("");
+      // Cache the result
+      setToCache(cacheKey, postsHtml);
         // Send the HTML as a response
         res.send(postsHtml);
       })
@@ -50,6 +73,13 @@ router.get("/community/posts/", (req, res) => {
 router.get("/:postCategory/@:username/:postTitle", (req, res) => {
     // Extract parameters from the URL
     const { username, postTitle } = req.params;
+    const cacheKey = `post_${username}_${postTitle}`;
+    const cachedData = getFromCache(cacheKey);
+
+    if (isCacheValid(cachedData)) {
+        console.log("Serving individual post from cache");
+        return res.send(cachedData.data);
+    }
     console.log("Fetching individual post...");
     // Fetch the post data
     client.database
@@ -101,6 +131,8 @@ router.get("/:postCategory/@:username/:postTitle", (req, res) => {
           </body>
           </html>
         `;
+        // Cache the result
+        setToCache(cacheKey, html);
         // Send the rendered HTML as the response
         res.send(html);
       })
@@ -115,8 +147,13 @@ router.get("/:postCategory/@:username/:postTitle", (req, res) => {
 
 // Endpoint to display a user's profile
 router.get("/@:username", (req, res) => {
-  const username = req.params.username;
-
+  const { username } = req.params;
+  const cacheKey = `user_profile_${username}`;
+  const cachedData = getFromCache(cacheKey);
+  if (isCacheValid(cachedData)) {
+    console.log("Serving profile from cache");
+    return res.send(cachedData.data);
+  }
   console.log(`Fetching profile for ${username}...`); // Log #6: Endpoint for user profile hit
 
   client.database
@@ -151,6 +188,9 @@ router.get("/@:username", (req, res) => {
             <p>${profile.about}</p>
             <img src=\"${profile.profile_image}\" alt=\"${profile.name}'s profile image\">
         </div>`;
+
+      // Cache the result
+      setToCache(cacheKey, profileHtml);
 
       res.send(profileHtml);
     })
