@@ -171,12 +171,20 @@ router.get("/@:username", (req, res) => {
       const postingMetadata = JSON.parse(account.posting_json_metadata);
       const { profile } = postingMetadata;
 
+      const displayName = profile.name || username;
+      const aboutText = profile.about || "About me not filled in.";
+
       const headerHtml = `
         <head>
         <link rel="stylesheet" type="text/css" href="/style.css">
+        <script
+          src="https://unpkg.com/htmx.org@1.9.10"
+          integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+          crossorigin="anonymous"
+        ></script>
         </head>
         <header>
-            <h1>${profile.name}</h1>
+            <h1>${displayName}</h1>
             <nav>
                 <a href=\"/\">Home</a>
                 <a href=\"/community.html\">Community</a>
@@ -187,9 +195,18 @@ router.get("/@:username", (req, res) => {
       const profileHtml = `
             ${headerHtml}
             <div class=\"profile\">
-            <h2>${profile.name}</h2>
-            <p>${profile.about}</p>
-            <img src=\"${profile.profile_image}\" alt=\"${profile.name}'s profile image\">
+            <h2>${displayName}</h2>
+            <p>${aboutText}</p>
+            <img src=\"${profile.profile_image}\" alt=\"${displayName}'s profile image\">
+            <div
+              id=\"posts\"
+              hx-get=\"/@${username}/posts\"
+              hx-trigger=\"load revealed\"
+              hx-target=\"#posts\"
+              hx-swap=\"beforeend\"
+              hx-headers='{"X-Requested-With": "HTMX"}'
+            >
+            </div>
         </div>`;
 
       // Cache the result
@@ -202,6 +219,40 @@ router.get("/@:username", (req, res) => {
       res.status(500).send("Error fetching user profile from Hive community");
     });
 });
+
+// Endpoint to fetch user's posts
+router.get("/@:username/posts", (req, res) => {
+  const { username } = req.params;
+  const cacheKey = `user_posts_${username}`;
+  const cachedData = getFromCache(cacheKey);
+  if (isCacheValid(cachedData)) {
+    console.log("Serving user's posts from cache");
+    return res.send(cachedData.data);
+  }
+  console.log(`Fetching posts for ${username}...`);
+
+  // Define the query for fetching user's posts
+  const postQuery = {
+    tag: username,
+    limit: 2,
+  };
+
+  // Fetch posts with retries and delay
+  fetchPosts(3, 2000, postQuery, client)
+    .then((posts) => {
+      console.log(`Fetched ${posts.length} posts for user ${username}`);
+      // Cache the raw posts JSON
+      setToCache(cacheKey, posts);
+      // Render the posts
+      const postsHtml = renderPosts(posts);
+      res.send(postsHtml);
+    })
+    .catch((error) => {
+      console.error(`Error fetching posts for user ${username}:`, error);
+      res.status(500).send("Error fetching user's posts");
+    });
+});
+
 
 // Placeholder for additional API endpoints
 
