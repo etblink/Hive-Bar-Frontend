@@ -17,56 +17,59 @@ function isCacheValid(entry) {
   return entry && entry.expiry > Date.now();
 }
 
-// Define a route to fetch posts from the Hive community and return as HTML
+// Define a utility function to render posts as HTML
+function renderPosts(posts) {
+  return posts
+    .map((post) => {
+      const metadata = parseMetadata(post.json_metadata);
+      let description = metadata.description || "No description available";
+      return `<div class="post">
+              <h2 class="post__title">${post.title}</h2>
+              <p class="post__description">${description}</p>
+              <a href="/@${post.author}" class="post__author-link"><div class="post__author">${post.author}</div></a>
+              <a href="/${post.category}/@${post.author}/${post.permlink}" class="post__read-more">Read more</a>
+              <div class="post__img-wrapper">
+                <img src="./assets/dislike.svg" alt="Dislike" class="post__button post__button--dislike">
+              </div>
+              <div class="post__img-wrapper" onclick="upvoteWithKeychain('${post.author}', '${post.permlink}')">
+                <img src="./assets/like.svg" alt="Like" class="post__button post__button--like">
+              </div>
+            </div>`;
+    })
+    .join("");
+}
+ 
 router.get("/community/posts/", (req, res) => {
   const cacheKey = "community_posts";
   const cachedData = getFromCache(cacheKey);
-
   if (isCacheValid(cachedData)) {
     console.log("Serving posts from cache");
-    return res.send(cachedData.data);
+    // Render HTML from the cached post JSON
+    const postsHtml = renderPosts(cachedData);
+    return res.send(postsHtml);
   }
   console.log("Fetching posts...");
   const postQuery = {
     tag: "hive-167922",
-    limit: 2,
+    limit: 5,
   };
   const retries = 3;
   const retryDelay = 2000;
 
-  fetchPosts(retries, retryDelay, postQuery, client)
+fetchPosts(retries, retryDelay, postQuery, client)
     .then((posts) => {
-        console.log(`Fetched ${posts.length} posts`);
-        // Convert the posts to HTML
-        let postsHtml = posts
-          .map((post) => {
-            const metadata = parseMetadata(post.json_metadata);
-            let description = metadata.description || "No description available";
-            return `<div class="post">
-                    <h2 class="post__title">${post.title}</h2>
-                    <p class="post__description">${description}</p>
-                    <a href="/@${post.author}" class="post__author-link"><div class="post__author">${post.author}</div></a>
-                    <a href="/${post.category}/@${post.author}/${post.permlink}" class="post__read-more">Read more</a>
-                    <div class="post__img-wrapper">
-                      <img src="./assets/dislike.svg" alt="Dislike" class="post__button post__button--dislike">
-                    </div>
-                    <div class="post__img-wrapper" onclick="upvoteWithKeychain('${post.author}', '${post.permlink}')">
-                      <img src="./assets/like.svg" alt="Like" class="post__button post__button--like">
-                    </div>
-                  </div>`;
-          })
-          .join("");
-      // Cache the result
-      setToCache(cacheKey, postsHtml);
-        // Send the HTML as a response
-        res.send(postsHtml);
-      })
-      .catch((error) => {
-        console.error("Error fetching posts:", error);
-        res.status(500).send("Error fetching posts from Hive community");
-      });
-
-  
+      console.log(`Fetched ${posts.length} posts`);
+      // Cache the raw posts JSON
+      setToCache(cacheKey, posts);
+      // Pass the posts to the render function
+      const postsHtml = renderPosts(posts);
+      // Send the HTML as a response
+      res.send(postsHtml);
+    })
+    .catch((error) => {
+      console.error("Error fetching posts:", error);
+      res.status(500).send("Error fetching posts from Hive community");
+    });
 });
 
 // Define a route to serve individual post pages
