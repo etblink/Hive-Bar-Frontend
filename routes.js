@@ -2,47 +2,9 @@ const express = require("express");
 const router = express.Router();
 const { fetchPosts, parseMetadata, escapeHTML } = require("./utils");
 const { client, renderer } = require("./hiveClient");
-// Simple in-memory cache
-const cache = {};
-function generateCacheKey(prefix, parameters) {
-  return `${prefix}_${Object.values(parameters).join("_")}`;
-}
-// Function to get data from cache by key
-function getFromCache(key) {
-  return cache[key];
-}
-// Function to set data to cache with a key and TTL (time to live)
-function setToCache(key, data, ttl = 300000) { // Default TTL 5 minutes
-  cache[key] = { data, expiry: Date.now() + ttl };
-}
-// Function to check cache validity
-function isCacheValid(entry) {
-  return entry && entry.expiry > Date.now();
-}
+const { generateCacheKey, getFromCache, isCacheValid, setToCache } = require('./cacheUtils');
+const { renderPosts } = require("./renderUtils");
 
-// Define a utility function to render posts as HTML
-function renderPosts(posts) {
-  return posts
-    .map((post) => {
-      const metadata = parseMetadata(post.json_metadata);
-      let description = metadata.description || "No description available";
-      return `<div class="post">
-              <h2 class="post__title">${post.title}</h2>
-              <p class="post__description">${description}</p>
-              <a href="/@${post.author}" class="post__author-link"><div class="post__author">${post.author}</div></a>
-              <a href="/${post.category}/@${post.author}/${post.permlink}" class="post__read-more">Read more</a>
-              <div class="post__button-flex">
-                <div class="post__img-wrapper">
-                  <img src="./assets/dislike.svg" alt="Dislike" class="post__button post__button--dislike">
-                </div>
-                <div class="post__img-wrapper" onclick="upvoteWithKeychain('${post.author}', '${post.permlink}')">
-                  <img src="./assets/like.svg" alt="Like" class="post__button post__button--like">
-                </div>
-              </div>
-            </div>`;
-    })
-    .join("");
-}
  
 router.get("/community/posts/", (req, res) => {
   const cacheKey = generateCacheKey("community_posts", req.query);
@@ -175,11 +137,17 @@ router.get("/@:username", (req, res) => {
         return res.status(404).send("User profile not found");
       }
 
-      const postingMetadata = JSON.parse(account.posting_json_metadata);
-      const { profile } = postingMetadata;
+      // Existing code that attempts to parse profile information:
+      let postingMetadata;
+      try {
+        postingMetadata = JSON.parse(account.posting_json_metadata || '{}');
+      } catch (e) {
+        console.error("Error parsing account posting_json_metadata:", e);
+        postingMetadata = {};
+      }
+      const profile = postingMetadata.profile || {};
 
-      const displayName = profile.name || username;
-      const aboutText = profile.about || "About me not filled in.";
+      
 
       const headerHtml = `
         <head>
@@ -194,7 +162,7 @@ router.get("/@:username", (req, res) => {
         <header>
             <button id="loginButton">Login</button>
             <button id="logoutButton" style="display: none">Logout</button>
-            <h1>${displayName}</h1>
+            <h1>${username}</h1>
             <nav>
                 <a href=\"/\">Home</a>
                 <a href=\"/community.html\">Community</a>
@@ -205,10 +173,10 @@ router.get("/@:username", (req, res) => {
       const profileHtml = `
           ${headerHtml}
           <div class="profile">
-              <h2>${displayName}</h2>
-              <p>${aboutText}</p>
+              <h2>${username}</h2>
+              <p>${profile.about}</p>
               <div class="profile__image-wrapper">
-                  <img src="${profile.profile_image}" alt="${displayName}'s profile image" class="profile__image">
+                  <img src="${profile.profile_image}" alt="${username}'s profile image" class="profile__image">
               </div>
               <div id="posts"
                    hx-get="/@${username}/posts"
