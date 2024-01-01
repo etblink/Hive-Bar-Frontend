@@ -145,7 +145,11 @@ footer {
     display: inline-block;
     margin: 4px; 
 }
-
+.post__button-flex {
+    display: flex;
+    justify-content: end;
+    gap: 1.5em;
+}
 .post__button--dislike {
     background-color: #f44336;
 }
@@ -155,6 +159,36 @@ footer {
 }
 .post__button--dislike:hover {
     background-color: #b71c1c;
+}
+
+/* Profile */
+.profile {
+    /* Basic layout */
+    max-width: 640px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    /* Shadow and border */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+}
+
+.profile > h2 {
+    margin-bottom: 0.5em;
+    color: #333;
+}
+
+.profile > p {
+    color: #555;
+    margin-bottom: 1em;
+}
+
+.profile img {
+    max-width: 100px;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 20px auto;
 }
 
 

@@ -4,6 +4,9 @@ const { fetchPosts, parseMetadata, escapeHTML } = require("./utils");
 const { client, renderer } = require("./hiveClient");
 // Simple in-memory cache
 const cache = {};
+function generateCacheKey(prefix, parameters) {
+  return `${prefix}_${Object.values(parameters).join("_")}`;
+}
 // Function to get data from cache by key
 function getFromCache(key) {
   return cache[key];
@@ -28,11 +31,13 @@ function renderPosts(posts) {
               <p class="post__description">${description}</p>
               <a href="/@${post.author}" class="post__author-link"><div class="post__author">${post.author}</div></a>
               <a href="/${post.category}/@${post.author}/${post.permlink}" class="post__read-more">Read more</a>
-              <div class="post__img-wrapper">
-                <img src="./assets/dislike.svg" alt="Dislike" class="post__button post__button--dislike">
-              </div>
-              <div class="post__img-wrapper" onclick="upvoteWithKeychain('${post.author}', '${post.permlink}')">
-                <img src="./assets/like.svg" alt="Like" class="post__button post__button--like">
+              <div class="post__button-flex">
+                <div class="post__img-wrapper">
+                  <img src="./assets/dislike.svg" alt="Dislike" class="post__button post__button--dislike">
+                </div>
+                <div class="post__img-wrapper" onclick="upvoteWithKeychain('${post.author}', '${post.permlink}')">
+                  <img src="./assets/like.svg" alt="Like" class="post__button post__button--like">
+                </div>
               </div>
             </div>`;
     })
@@ -40,7 +45,7 @@ function renderPosts(posts) {
 }
  
 router.get("/community/posts/", (req, res) => {
-  const cacheKey = "community_posts";
+  const cacheKey = generateCacheKey("community_posts", req.query);
   const cachedData = getFromCache(cacheKey);
   if (isCacheValid(cachedData)) {
     console.log("Serving posts from cache");
@@ -75,8 +80,8 @@ fetchPosts(retries, retryDelay, postQuery, client)
 // Define a route to serve individual post pages
 router.get("/:postCategory/@:username/:postTitle", (req, res) => {
     // Extract parameters from the URL
-    const { username, postTitle } = req.params;
-    const cacheKey = `post_${username}_${postTitle}`;
+    const { username, postCategory, postTitle } = req.params;
+    const cacheKey = generateCacheKey("post", { username, postCategory, postTitle });
     const cachedData = getFromCache(cacheKey);
 
     if (isCacheValid(cachedData)) {
@@ -97,6 +102,8 @@ router.get("/:postCategory/@:username/:postTitle", (req, res) => {
         // HTML Template
         const headerHtml = `
           <header>
+            <button id="loginButton">Login</button>
+            <button id="logoutButton" style="display: none">Logout</button>
             <h1>${escapeHTML(post.title)}</h1>
             <nav>
               <a href="/">Home</a>
@@ -151,7 +158,7 @@ router.get("/:postCategory/@:username/:postTitle", (req, res) => {
 // Endpoint to display a user's profile
 router.get("/@:username", (req, res) => {
   const { username } = req.params;
-  const cacheKey = `user_profile_${username}`;
+  const cacheKey = generateCacheKey("user_profile", { username });
   const cachedData = getFromCache(cacheKey);
   if (isCacheValid(cachedData)) {
     console.log("Serving profile from cache");
@@ -185,6 +192,8 @@ router.get("/@:username", (req, res) => {
         <script src="communityActions.js"></script>
         </head>
         <header>
+            <button id="loginButton">Login</button>
+            <button id="logoutButton" style="display: none">Logout</button>
             <h1>${displayName}</h1>
             <nav>
                 <a href=\"/\">Home</a>
@@ -194,21 +203,23 @@ router.get("/@:username", (req, res) => {
     `;
 
       const profileHtml = `
-            ${headerHtml}
-            <div class=\"profile\">
-            <h2>${displayName}</h2>
-            <p>${aboutText}</p>
-            <img src=\"${profile.profile_image}\" alt=\"${displayName}'s profile image\">
-            <div
-              id=\"posts\"
-              hx-get=\"/@${username}/posts\"
-              hx-trigger=\"load revealed\"
-              hx-target=\"#posts\"
-              hx-swap=\"beforeend\"
-              hx-headers='{"X-Requested-With": "HTMX"}'
-            >
-            </div>
-        </div>`;
+          ${headerHtml}
+          <div class="profile">
+              <h2>${displayName}</h2>
+              <p>${aboutText}</p>
+              <div class="profile__image-wrapper">
+                  <img src="${profile.profile_image}" alt="${displayName}'s profile image" class="profile__image">
+              </div>
+              <div id="posts"
+                   hx-get="/@${username}/posts"
+                   hx-trigger="load revealed"
+                   hx-target="#posts"
+                   hx-indicator="#spinner"
+                   hx-swap="beforeend">
+              </div>
+              <img id="spinner" src="./assets/spinner.svg" class="htmx-indicator" />
+          </div>
+      `;
 
       // Cache the result
       setToCache(cacheKey, profileHtml);
@@ -224,7 +235,7 @@ router.get("/@:username", (req, res) => {
 // Endpoint to fetch user's posts
 router.get("/@:username/posts", (req, res) => {
   const { username } = req.params;
-  const cacheKey = `user_posts_${username}`;
+  const cacheKey = generateCacheKey("user_posts", { username });
   const cachedData = getFromCache(cacheKey);
   if (isCacheValid(cachedData)) {
     console.log("Serving user's posts from cache");
