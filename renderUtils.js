@@ -15,7 +15,7 @@ function renderPosts(posts) {
                 <div class="post__img-wrapper" onclick="upvoteWithKeychain('${post.author}', '${post.permlink}')">
                   <img src="./assets/like.svg" alt="Like" class="post__button post__button--like">
                 </div>
-                <div class="post__img-wrapper">
+                <div class="post__img-wrapper" onclick="downvoteWithKeychain('${post.author}', '${post.permlink}')">
                   <img src="./assets/dislike.svg" alt="Dislike" class="post__button post__button--dislike">
                 </div>
               </div>

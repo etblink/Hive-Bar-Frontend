@@ -32,6 +32,36 @@ function upvoteWithKeychain(author, permlink) {
     });
 }
 
+function downvoteWithKeychain(author, permlink) {
+    if (!window.hive_keychain) {
+        alert("Hive Keychain is not installed");
+        return;
+    }
+    const voter = localStorage.getItem("hive_username");
+    if (!voter) {
+        alert("You must be logged in to vote");
+        return;
+    }
+    const weight = -10000; // represents a 100% downvote weight
+    const voteOperation = [
+        "vote",
+        {
+            "voter": voter,
+            "author": author,
+            "permlink": permlink,
+            "weight": weight
+        }
+    ];
+    hive_keychain.requestBroadcast(voter, [voteOperation], "active", function(response) {
+        if (response.success) {
+            alert("Downvote successful!");
+            // Optionally, update the UI here to reflect the successful downvote
+        } else {
+            alert("Downvote failed: " + response.message);
+        }
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const loginButton = document.getElementById("loginButton");
     const logoutButton = document.getElementById("logoutButton");

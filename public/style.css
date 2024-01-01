@@ -140,7 +140,7 @@ footer {
 
 .post__button {
     width: 100%; 
-    background-color: #4CAF50;
+    color: #4CAF50;
     color: white;
     display: inline-block;
     margin: 4px; 
@@ -151,15 +151,12 @@ footer {
     gap: 1.5em;
 }
 .post__button--dislike {
-    background-color: #f44336;
+    color: #f44336;
 }
-.post__button:hover,
-.post__button--like:hover {
-    background-color: #3e8e41;
+.post__button:hover {
+    background-color: #d9d9d9;
 }
-.post__button--dislike:hover {
-    background-color: #b71c1c;
-}
+
 
 /* Profile */
 .profile {
